@@ -1,0 +1,78 @@
+More Accurate Picking
+The previous example shows the most basic form of picking, based on the bounds of the object. If you try the example and click near the sphere you can see that it isn't very accurate. If you imagine a box around the sphere and click anywhere within that box, the program will report that you have picked the sphere. This is because the box and the sphere both have the same bounds.
+
+If you need to be more accurate you need to use geometry picking. Change the line:
+
+pickCanvas.setMode(PickCanvas.BOUNDS);
+
+to
+
+pickCanvas.setMode(PickCanvas.GEOMETRY);
+
+Unfortunately, this is not the whole story. For geometry picking to work you need to set various capabilities on the objects in your scene. These capabilities are set to off by default so that applications that do not use advanced picking are not slowed down unnecessarily. To turn them on, use:
+
+node.setCapability(Node.ENABLE_PICK_REPORTING);
+
+PickTool.setCapabilities(node, PickTool.INTERSECT_FULL);
+
+If you set the capabilities on all the objects you have added to the scene, you may find that detailed picking still does not work. This is because objects may be made up of other objects. For example instead of setting them once for a cube, you may need to set the capabilities six times, once for each face. The easiest way to make sure that all parts of each object are pickable is to call the following function on BranchGroup of your scene:
+
+public void enablePicking(Node node) {
+
+    node.setPickable(true);
+
+    node.setCapability(Node.ENABLE_PICK_REPORTING);
+
+    try {
+
+       Group group = (Group) node;
+
+       for (Enumeration e = group.getAllChildren(); e.hasMoreElements();) {
+
+          enablePicking((Node)e.nextElement());
+
+       }
+
+    }
+
+    catch(ClassCastException e) {
+
+        // if not a group node, there are no children so ignore exception
+
+    }
+
+    try {
+
+          Shape3D shape = (Shape3D) node;
+
+          PickTool.setCapabilities(node, PickTool.INTERSECT_FULL);
+
+          for (Enumeration e = shape.getAllGeometries(); e.hasMoreElements();) {
+
+             Geometry g = (Geometry)e.nextElement();
+
+             g.setCapability(g.ALLOW_INTERSECT);
+
+          }
+
+       }
+
+    catch(ClassCastException e) {
+
+       // not a Shape3D node ignore exception
+
+    }
+
+}
+
+After all the capabilities are set you can use System.out.println on your pick result to find the full range of information available. You can also use PickAllSorted instead of PickClosest to pick more than one object at the same time.
+
+Pick Shapes
+So far the examples have picked objects using the default shape: an imaginary ray going from the viewer's eye position through the mouse pointer into infinity. Instead of a thin ray you can change the shape used for picking. For example, you might use a cylinder instead of a narrow ray to make picking points easier. A cone shaped area is an easy way to pick anything that a viewer can see.
+
+The setShape function on PickCanvas (and PickTool) can set the shape to a Cone, Cylinder, Point or Ray. Each of these shapes can either go on forever (a ray) or stop after a fixed distance (a segment), you can also pick based on a Bounds object.
+
+As well as setting the shape you can set the tolerance for the picking operation. This is the distance (in pixels) that your PickShape can miss the target object by and still select the object.
+
+Advanced Picking
+Picking can be used for more than just mouse selection. The pick shapes can be located anywhere and can be moved around within your scene. They can be used for collision detection or avoidance. For example, you could use a pick shape in front of a person to detect potential obstacles and stop them from bumping into things. If you were writing a pool game you could use a PickRaySegment to represent the pool cue and you could pick with BoundingSphere to detecting collisions between the balls. 
